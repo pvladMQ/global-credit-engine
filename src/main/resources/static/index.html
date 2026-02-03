@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Credit Scoring Engine | Tanzu Data Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --tanzu-blue: #1E3A5F;
+            --tanzu-teal: #00C7B7;
+            --tanzu-light: #F4F7FA;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--tanzu-light) 0%, #E8EEF4 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(90deg, var(--tanzu-blue) 0%, #2D4A6F 100%);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.15);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .card-header {
+            background: linear-gradient(90deg, var(--tanzu-blue) 0%, #2D4A6F 100%);
+            color: white;
+            border-radius: 16px 16px 0 0 !important;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+        }
+        
+        .service-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 500;
+            margin: 4px;
+            transition: all 0.2s;
+        }
+        
+        .service-badge.bound {
+            background: linear-gradient(135deg, #D4EDDA 0%, #C3E6CB 100%);
+            color: #155724;
+            border: 1px solid #B1DFBB;
+        }
+        
+        .service-badge.local {
+            background: linear-gradient(135deg, #FFF3CD 0%, #FFE69C 100%);
+            color: #856404;
+            border: 1px solid #FFE082;
+        }
+        
+        .service-badge i {
+            margin-right: 8px;
+            font-size: 1.1em;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--tanzu-blue);
+            line-height: 1.2;
+        }
+        
+        .metric-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.25rem;
+        }
+        
+        .btn-tanzu {
+            background: linear-gradient(135deg, var(--tanzu-teal) 0%, #00A89D 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        
+        .btn-tanzu:hover {
+            background: linear-gradient(135deg, #00B5A5 0%, #009688 100%);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0,199,183,0.4);
+        }
+        
+        .btn-latency {
+            background: linear-gradient(135deg, #6F42C1 0%, #5A32A3 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 10px;
+        }
+        
+        .btn-latency:hover {
+            background: linear-gradient(135deg, #7E55C7 0%, #6842B8 100%);
+            color: white;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table th {
+            background: #F8F9FA;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .risk-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        
+        .risk-LOW_RISK { background: #D4EDDA; color: #155724; }
+        .risk-MEDIUM_RISK { background: #FFF3CD; color: #856404; }
+        .risk-HIGH_RISK { background: #F8D7DA; color: #721C24; }
+        .risk-VERY_HIGH_RISK { background: #721C24; color: white; }
+        
+        .score-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .score-high { color: #28A745; }
+        .score-medium { color: #FFC107; }
+        .score-low { color: #DC3545; }
+        
+        .latency-result {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .latency-bar {
+            height: 24px;
+            border-radius: 12px;
+            transition: width 0.5s ease-out;
+        }
+        
+        .latency-postgres {
+            background: linear-gradient(90deg, #DC3545 0%, #C82333 100%);
+        }
+        
+        .latency-gemfire {
+            background: linear-gradient(90deg, var(--tanzu-teal) 0%, #00A89D 100%);
+        }
+        
+        .refresh-indicator {
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--tanzu-teal);
+            box-shadow: 0 0 0 0.2rem rgba(0,199,183,0.25);
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-bank2 me-2"></i>
+                Global Credit Scoring Engine
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-light text-dark me-3">
+                    <i class="bi bi-cloud-check me-1"></i>
+                    Tanzu Platform
+                </span>
+                <span id="refreshIndicator" class="text-light opacity-75 small">
+                    <i class="bi bi-arrow-clockwise"></i> Auto-refresh: 5s
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+        <!-- Toast for notifications -->
+        <div class="toast-container">
+            <div id="successToast" class="toast" role="alert">
+                <div class="toast-header bg-success text-white">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <strong class="me-auto">Success</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body" id="toastMessage">Application submitted!</div>
+            </div>
+        </div>
+
+        <!-- Metrics Row -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-graph-up me-2"></i>Real-Time Metrics</span>
+                        <span class="badge bg-light text-dark" id="lastUpdated">--</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-2 col-6">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="totalApps">0</div>
+                                    <div class="metric-label">Applications</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="avgPostgres">0<small>ms</small></div>
+                                    <div class="metric-label">Avg PostgreSQL</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="metric-card">
+                                    <div class="metric-value text-success" id="avgGemfire">0<small>ms</small></div>
+                                    <div class="metric-label">Avg GemFire</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="speedupRatio">0<small>x</small></div>
+                                    <div class="metric-label">Speed Boost</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="cacheHits">0</div>
+                                    <div class="metric-label">Cache Hits</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="cacheHitRate">0<small>%</small></div>
+                                    <div class="metric-label">Hit Rate</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Submit Application Form -->
+            <div class="col-lg-5 mb-4 mb-lg-0">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <i class="bi bi-file-earmark-plus me-2"></i>Submit Credit Application
+                    </div>
+                    <div class="card-body">
+                        <form id="applicationForm">
+                            <div class="mb-3">
+                                <label for="ssn" class="form-label">Social Security Number</label>
+                                <input type="text" class="form-control" id="ssn" placeholder="XXX-XX-XXXX" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="fullName" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="fullName" placeholder="John Doe" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="creditLimit" class="form-label">Requested Credit Limit</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="creditLimit" placeholder="50000">
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label for="reason" class="form-label">Application Reason</label>
+                                <select class="form-select" id="reason">
+                                    <option value="Home Purchase">Home Purchase</option>
+                                    <option value="Home Renovation">Home Renovation</option>
+                                    <option value="Auto Loan">Auto Loan</option>
+                                    <option value="Debt Consolidation">Debt Consolidation</option>
+                                    <option value="Business">Business</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-tanzu w-100">
+                                <i class="bi bi-send me-2"></i>Submit Application
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="col-lg-7">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-hdd-stack me-2"></i>System Status - Tanzu Data Services</span>
+                        <span class="badge" id="cfBadge">Loading...</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="servicesContainer" class="mb-4">
+                            <div class="text-center text-muted py-3">
+                                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                Loading services...
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-speedometer2 me-2"></i>Simulate Regional Latency
+                        </h6>
+                        <div class="row g-2">
+                            <div class="col-md-8">
+                                <input type="text" class="form-control" id="latencyTestSsn" placeholder="Enter SSN to test">
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-latency w-100" onclick="runLatencyTest()">
+                                    <i class="bi bi-lightning-charge me-1"></i>Run Test
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="latencyResults" class="latency-result mt-3" style="display: none;">
+                            <div class="row text-center mb-3">
+                                <div class="col-6">
+                                    <div class="text-danger fw-bold" id="pgLatency">--ms</div>
+                                    <small class="text-muted">PostgreSQL (Remote)</small>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-success fw-bold" id="gfLatency">--ms</div>
+                                    <small class="text-muted">GemFire (Edge Cache)</small>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">PostgreSQL</small>
+                                <div class="progress" style="height: 24px;">
+                                    <div class="progress-bar latency-postgres" id="pgBar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <small class="text-muted">GemFire</small>
+                                <div class="progress" style="height: 24px;">
+                                    <div class="progress-bar latency-gemfire" id="gfBar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <span class="badge bg-success fs-6" id="speedupBadge">--x faster</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cached Scores Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-database me-2"></i>Cached Scores from GemFire</span>
+                        <span id="cacheRefresh" class="refresh-indicator">
+                            <i class="bi bi-arrow-repeat me-1"></i>
+                            <span id="scoreCount">0</span> records
+                        </span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>SSN</th>
+                                        <th>Full Name</th>
+                                        <th>Credit Score</th>
+                                        <th>Risk Level</th>
+                                        <th>Calculated At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scoresTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            No cached scores yet. Submit an application to get started.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-muted py-4 mt-4">
+            <small>
+                <i class="bi bi-heart-fill text-danger"></i> 
+                Built for VMware Tanzu Experience Day | Demonstrating the Data Hub Pattern
+            </small>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-refresh interval (5 seconds)
+        const REFRESH_INTERVAL = 5000;
+        
+        // Toast instance
+        let toast;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            toast = new bootstrap.Toast(document.getElementById('successToast'));
+            
+            // Initial data load
+            loadAllData();
+            
+            // Set up auto-refresh
+            setInterval(loadAllData, REFRESH_INTERVAL);
+            
+            // Form submission handler
+            document.getElementById('applicationForm').addEventListener('submit', submitApplication);
+        });
+        
+        async function loadAllData() {
+            await Promise.all([
+                loadMetrics(),
+                loadSystemStatus(),
+                loadCachedScores()
+            ]);
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+        }
+        
+        async function loadMetrics() {
+            try {
+                const response = await fetch('/api/metrics');
+                const data = await response.json();
+                
+                document.getElementById('totalApps').textContent = data.totalApplications || 0;
+                document.getElementById('avgPostgres').innerHTML = (data.avgPostgresTimeMs || 0) + '<small>ms</small>';
+                document.getElementById('avgGemfire').innerHTML = (data.avgGemfireTimeMs || 0) + '<small>ms</small>';
+                document.getElementById('speedupRatio').innerHTML = (data.speedupRatio || 0) + '<small>x</small>';
+                document.getElementById('cacheHits').textContent = data.cacheHits || 0;
+                document.getElementById('cacheHitRate').innerHTML = (data.cacheHitRate || 0) + '<small>%</small>';
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
+        }
+        
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                const cfBadge = document.getElementById('cfBadge');
+                if (data.cloudFoundry) {
+                    cfBadge.className = 'badge bg-success';
+                    cfBadge.innerHTML = '<i class="bi bi-cloud-check me-1"></i>Cloud Foundry';
+                } else {
+                    cfBadge.className = 'badge bg-warning text-dark';
+                    cfBadge.innerHTML = '<i class="bi bi-laptop me-1"></i>Local Development';
+                }
+                
+                const container = document.getElementById('servicesContainer');
+                if (data.boundServices && data.boundServices.length > 0) {
+                    container.innerHTML = data.boundServices.map(service => {
+                        const icon = getServiceIcon(service.type);
+                        const statusClass = service.status === 'bound' ? 'bound' : 'local';
+                        return `
+                            <span class="service-badge ${statusClass}">
+                                <i class="bi ${icon}"></i>
+                                <span>
+                                    <strong>${service.name}</strong>
+                                    <small class="d-block opacity-75">${service.type}</small>
+                                </span>
+                            </span>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error loading system status:', error);
+            }
+        }
+        
+        function getServiceIcon(type) {
+            if (type.toLowerCase().includes('postgres')) return 'bi-database';
+            if (type.toLowerCase().includes('rabbit')) return 'bi-envelope';
+            if (type.toLowerCase().includes('gemfire')) return 'bi-lightning';
+            return 'bi-box';
+        }
+        
+        async function loadCachedScores() {
+            try {
+                const response = await fetch('/api/scores');
+                const data = await response.json();
+                
+                document.getElementById('scoreCount').textContent = data.count || 0;
+                
+                const tbody = document.getElementById('scoresTableBody');
+                
+                if (!data.scores || data.scores.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                No cached scores yet. Submit an application to get started.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = data.scores.map(score => {
+                    const scoreClass = score.calculatedScore >= 70 ? 'score-high' : 
+                                      score.calculatedScore >= 50 ? 'score-medium' : 'score-low';
+                    const riskClass = 'risk-' + score.riskLevel;
+                    const maskedSsn = maskSsn(score.ssn);
+                    const formattedDate = score.calculatedAt ? new Date(score.calculatedAt).toLocaleString() : '--';
+                    
+                    return `
+                        <tr>
+                            <td><code>${maskedSsn}</code></td>
+                            <td>${score.fullName || '--'}</td>
+                            <td><span class="score-display ${scoreClass}">${score.calculatedScore}</span></td>
+                            <td><span class="risk-badge ${riskClass}">${formatRiskLevel(score.riskLevel)}</span></td>
+                            <td><small>${formattedDate}</small></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="runLatencyTestFor('${score.ssn}')">
+                                    <i class="bi bi-speedometer2"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading cached scores:', error);
+            }
+        }
+        
+        function maskSsn(ssn) {
+            if (!ssn) return '***-**-****';
+            if (ssn.length >= 4) {
+                return '***-**-' + ssn.slice(-4);
+            }
+            return ssn;
+        }
+        
+        function formatRiskLevel(level) {
+            if (!level) return '--';
+            return level.replace('_', ' ').replace('RISK', '').trim();
+        }
+        
+        async function submitApplication(event) {
+            event.preventDefault();
+            
+            const application = {
+                ssn: document.getElementById('ssn').value,
+                fullName: document.getElementById('fullName').value,
+                requestedCreditLimit: parseInt(document.getElementById('creditLimit').value) || 0,
+                applicationReason: document.getElementById('reason').value
+            };
+            
+            try {
+                const response = await fetch('/api/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(application)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('toastMessage').textContent = 
+                        `Application for ${application.fullName} submitted successfully!`;
+                    toast.show();
+                    
+                    // Clear form
+                    document.getElementById('applicationForm').reset();
+                    
+                    // Refresh data after a short delay
+                    setTimeout(loadAllData, 1500);
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to submit application'));
+                }
+            } catch (error) {
+                console.error('Error submitting application:', error);
+                alert('Error submitting application. Please try again.');
+            }
+        }
+        
+        function runLatencyTestFor(ssn) {
+            document.getElementById('latencyTestSsn').value = ssn;
+            runLatencyTest();
+        }
+        
+        async function runLatencyTest() {
+            const ssn = document.getElementById('latencyTestSsn').value;
+            if (!ssn) {
+                alert('Please enter an SSN to test');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('latencyResults');
+            resultsDiv.style.display = 'block';
+            
+            // Show loading state
+            document.getElementById('pgLatency').textContent = '...';
+            document.getElementById('gfLatency').textContent = '...';
+            document.getElementById('pgBar').style.width = '0%';
+            document.getElementById('gfBar').style.width = '0%';
+            
+            try {
+                const response = await fetch(`/api/latency-test/${encodeURIComponent(ssn)}`);
+                const data = await response.json();
+                
+                const pgTime = data.postgresTimeMs || 0;
+                const gfTime = data.gemfireTimeMs || 1;
+                const maxTime = Math.max(pgTime, gfTime, 1);
+                
+                document.getElementById('pgLatency').textContent = pgTime + 'ms';
+                document.getElementById('gfLatency').textContent = gfTime + 'ms';
+                
+                // Animate bars
+                setTimeout(() => {
+                    document.getElementById('pgBar').style.width = (pgTime / maxTime * 100) + '%';
+                    document.getElementById('gfBar').style.width = (gfTime / maxTime * 100) + '%';
+                }, 100);
+                
+                document.getElementById('speedupBadge').textContent = 
+                    (data.speedup || Math.round(pgTime / gfTime)) + 'x faster with GemFire!';
+                
+                // Refresh metrics
+                loadMetrics();
+            } catch (error) {
+                console.error('Error running latency test:', error);
+                alert('Error running latency test. Make sure the SSN exists in the cache.');
+            }
+        }
+    </script>
+</body>
+</html>
