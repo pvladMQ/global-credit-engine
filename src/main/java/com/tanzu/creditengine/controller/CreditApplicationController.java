@@ -162,8 +162,8 @@ public class CreditApplicationController {
                 checkServiceInJson(root, "credit-cache", "VMware Tanzu GemFire", boundServices);
 
             } catch (Exception e) {
-                logger.error("Error parsing VCAP_SERVICES", e);
-                // Fallback to simple string check if JSON parsing fails
+                logger.error("Error parsing VCAP_SERVICES, falling back to string check", e);
+                boundServices.clear(); // Clear potentially partial results
                 checkServiceBindingFallback(vcap, "credit-db", "PostgreSQL", boundServices);
                 checkServiceBindingFallback(vcap, "credit-msg", "RabbitMQ", boundServices);
                 checkServiceBindingFallback(vcap, "credit-cache", "VMware Tanzu GemFire", boundServices);
@@ -208,7 +208,11 @@ public class CreditApplicationController {
         Map<String, Object> service = new HashMap<>();
         service.put("name", name);
         service.put("type", type);
-        if (vcap.contains(name)) { // Looser check
+
+        // Robust check: if the name appears anywhere in VCAP_SERVICES, assume it's
+        // bound
+        // This fixes the issue where JSON parsing might miss it or the structure varies
+        if (vcap.contains(name)) {
             service.put("status", "bound");
         } else {
             service.put("status", "missing");
