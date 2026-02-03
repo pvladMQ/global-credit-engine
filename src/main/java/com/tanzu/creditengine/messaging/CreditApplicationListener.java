@@ -34,6 +34,7 @@ public class CreditApplicationListener {
     @RabbitListener(queues = "${credit-engine.queue.name:application-requests}")
     public void processCreditApplication(CreditApplicationMessage message) {
         logger.info("Received credit application for SSN: {}", message.getSsn());
+        metricsService.logEvent("Received application from RabbitMQ for SSN: " + message.getSsn());
 
         try {
             // Process the application through the credit score calculator
@@ -42,9 +43,11 @@ public class CreditApplicationListener {
 
             // Record successful message processing
             metricsService.recordMessageProcessed();
+            metricsService.logEvent("Verified & Cached score for SSN: " + message.getSsn());
 
             logger.info("Successfully processed credit application for SSN: {}", message.getSsn());
         } catch (Exception e) {
+            metricsService.logEvent("Error processing SSN " + message.getSsn() + ": " + e.getMessage());
             logger.error("Failed to process credit application for SSN: {}", message.getSsn(), e);
             throw e; // Re-throw to trigger message requeue/dead-letter handling
         }

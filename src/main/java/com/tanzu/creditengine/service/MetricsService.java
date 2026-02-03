@@ -2,7 +2,13 @@ package com.tanzu.creditengine.service;
 
 import org.springframework.stereotype.Service;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -19,6 +25,11 @@ public class MetricsService {
     private final AtomicLong cacheHits = new AtomicLong(0);
     private final AtomicLong cacheMisses = new AtomicLong(0);
     private final AtomicLong messagesProcessed = new AtomicLong(0);
+
+    // Store last 20 events for the dashboard log
+    private final Deque<String> recentEvents = new ConcurrentLinkedDeque<>();
+    private static final int MAX_EVENTS = 20;
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     /**
      * Record a new application submission.
@@ -88,6 +99,24 @@ public class MetricsService {
 
     public long getMessagesProcessed() {
         return messagesProcessed.get();
+    }
+
+    /**
+     * Log an event for the dashboard.
+     */
+    public void logEvent(String message) {
+        String timestamp = LocalTime.now().format(TIME_FORMATTER);
+        String event = timestamp + " - " + message;
+        recentEvents.addFirst(event);
+
+        // Keep size bounded
+        while (recentEvents.size() > MAX_EVENTS) {
+            recentEvents.removeLast();
+        }
+    }
+
+    public List<String> getRecentEvents() {
+        return new ArrayList<>(recentEvents);
     }
 
     public double getCacheHitRate() {

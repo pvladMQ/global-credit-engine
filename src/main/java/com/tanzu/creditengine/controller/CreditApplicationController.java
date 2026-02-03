@@ -207,6 +207,8 @@ public class CreditApplicationController {
         response.put("avgGemfireTimeMs", Math.round(metricsService.getAverageGemfireTimeMs() * 100.0) / 100.0);
         response.put("cacheHits", metricsService.getCacheHits());
         response.put("cacheMisses", metricsService.getCacheMisses());
+        response.put("messagesProcessed", metricsService.getMessagesProcessed());
+        response.put("recentEvents", metricsService.getRecentEvents());
         response.put("cacheHitRate", Math.round(metricsService.getCacheHitRate() * 100.0) / 100.0);
         response.put("speedupRatio", Math.round(metricsService.getSpeedupRatio() * 100.0) / 100.0);
         return ResponseEntity.ok(response);
@@ -223,12 +225,8 @@ public class CreditApplicationController {
 
         // Query Postgres (with simulated regional latency)
         long pgStart = System.currentTimeMillis();
-        try {
-            // Simulate network latency to a remote database (50-150ms)
-            Thread.sleep((long) (Math.random() * 100 + 50));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        // Latency simulation removed to show actual Bound Service performance vs
+        // GemFire
         Optional<UserFinancials> pgResult = userFinancialsRepository.findBySsn(ssn);
         long pgTime = System.currentTimeMillis() - pgStart;
         metricsService.recordPostgresQuery(pgTime);
