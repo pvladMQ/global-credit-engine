@@ -5,12 +5,14 @@ import com.tanzu.creditengine.entity.UserFinancials;
 import com.tanzu.creditengine.messaging.CreditApplicationMessage;
 import com.tanzu.creditengine.repository.CreditScoreCacheRepository;
 import com.tanzu.creditengine.repository.UserFinancialsRepository;
+import com.tanzu.creditengine.service.MetricsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.Random;
 
 /**
  * Service that calculates credit scores using data from PostgreSQL
@@ -25,6 +27,7 @@ public class CreditScoreCalculator {
     private final CreditScoreCacheRepository creditScoreCacheRepository;
 
     private final MetricsService metricsService;
+    private final Random random = new Random();
 
     public CreditScoreCalculator(UserFinancialsRepository userFinancialsRepository,
             CreditScoreCacheRepository creditScoreCacheRepository,
@@ -45,6 +48,17 @@ public class CreditScoreCalculator {
     @Transactional
     public int processAndCacheScore(CreditApplicationMessage message) {
         logger.info("Starting credit score calculation for SSN: {}", message.getSsn());
+
+        // Simulate "Regional Hub" network latency (40-80ms)
+        // This ensures the dashboard shows a realistic contrast between remote Postgres
+        // and local GemFire
+        try {
+            long latency = 40 + random.nextInt(41); // 40 to 80ms
+            Thread.sleep(latency);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("Latency simulation interrupted", e);
+        }
 
         // Step 1: Perform "Complex Join" - Query PostgreSQL for user financial data
         long pgStart = System.currentTimeMillis();

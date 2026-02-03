@@ -1,6 +1,7 @@
 package com.tanzu.creditengine.messaging;
 
 import com.tanzu.creditengine.service.CreditScoreCalculator;
+import com.tanzu.creditengine.service.MetricsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
