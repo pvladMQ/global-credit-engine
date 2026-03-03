@@ -375,14 +375,27 @@
             <div class="col-lg-7">
                 <div class="card h-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-hdd-stack me-2"></i>System Status - Tanzu Data Services</span>
-                        <span class="badge" id="cfBadge">Loading...</span>
+                        <span><i class="bi bi-robot me-2"></i>AI Credit Assistant (credit-chat)</span>
                     </div>
                     <div class="card-body">
-                        <div id="servicesContainer" class="mb-4">
-                            <div class="text-center text-muted py-3">
-                                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                                Loading services...
+                        <div id="aiAssistantContainer" class="mb-2">
+                            <div class="mb-3">
+                                <label for="aiQuery" class="form-label">Ask the AI Assistant</label>
+                                <textarea class="form-control" id="aiQuery" rows="2" 
+                                    placeholder="e.g., Show me the last 10 credit scores for auto loans..."></textarea>
+                            </div>
+                            <button type="button" class="btn btn-tanzu w-100 mb-3" onclick="submitAiQuery()">
+                                <i class="bi bi-robot me-2"></i>Submit AI Query
+                            </button>
+                            <div id="aiResultArea" class="border rounded p-3 bg-light" style="min-height: 100px; max-height: 300px; overflow-y: auto;">
+                                <div class="text-center text-muted py-4" id="aiPlaceholder">
+                                    Results will appear here...
+                                </div>
+                                <div id="aiLoader" class="text-center py-4" style="display: none;">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                    <div class="mt-2 small text-muted">Thinking...</div>
+                                </div>
+                                <div id="aiTableContainer" class="table-responsive"></div>
                             </div>
                         </div>
 
@@ -485,7 +498,6 @@
         async function loadAllData() {
             await Promise.all([
                 loadMetrics(),
-                loadSystemStatus(),
                 loadCachedScores()
             ]);
             document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
@@ -522,49 +534,52 @@
             }
         }
 
-        async function loadSystemStatus() {
+        async function submitAiQuery() {
+            const query = document.getElementById('aiQuery').value;
+            if (!query) return;
+
+            const placeholder = document.getElementById('aiPlaceholder');
+            const loader = document.getElementById('aiLoader');
+            const tableContainer = document.getElementById('aiTableContainer');
+
+            placeholder.style.display = 'none';
+            tableContainer.innerHTML = '';
+            loader.style.display = 'block';
+
             try {
-                const response = await fetch('/api/status');
+                const response = await fetch('/api/ai/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: query })
+                });
+
                 const data = await response.json();
+                loader.style.display = 'none';
 
-                const cfBadge = document.getElementById('cfBadge');
-                if (data.cloudFoundry) {
-                    cfBadge.className = 'badge bg-success';
-                    cfBadge.innerHTML = '<i class="bi bi-cloud-check me-1"></i>Cloud Foundry';
+                if (response.ok && Array.isArray(data) && data.length > 0) {
+                    let html = '<table class="table table-sm table-striped small"><thead><tr>';
+                    // Assume keys of first object are headers
+                    const headers = Object.keys(data[0]);
+                    headers.forEach(h => html += `<th>${h}</th>`);
+                    html += '</tr></thead><tbody>';
+                    
+                    data.forEach(row => {
+                        html += '<tr>';
+                        headers.forEach(h => html += `<td>${row[h]}</td>`);
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    tableContainer.innerHTML = html;
+                } else if (response.ok && data.message) {
+                    tableContainer.innerHTML = `<div class="alert alert-info small">${data.message}</div>`;
                 } else {
-                    cfBadge.className = 'badge bg-warning text-dark';
-                    cfBadge.innerHTML = '<i class="bi bi-laptop me-1"></i>Local Development';
-                }
-
-                const container = document.getElementById('servicesContainer');
-                if (data.boundServices && data.boundServices.length > 0) {
-                    container.innerHTML = data.boundServices.map(service => {
-                        const icon = getServiceIcon(service.type);
-                        let statusClass = service.status === 'bound' ? 'bound' : 'local';
-
-
-
-                        return `
-                            <span class="service-badge ${statusClass}">
-                                <i class="bi ${icon}"></i>
-                                <span>
-                                    <strong>${service.name}</strong>
-                                    <small class="d-block opacity-75">${service.type}</small>
-                                </span>
-                            </span>
-                        `;
-                    }).join('');
+                    tableContainer.innerHTML = `<div class="alert alert-info small">No structured results returned.</div>`;
                 }
             } catch (error) {
-                console.error('Error loading system status:', error);
+                console.error('AI Query failed:', error);
+                loader.style.display = 'none';
+                tableContainer.innerHTML = `<div class="alert alert-danger small">Error: AI service currently unavailable.</div>`;
             }
-        }
-
-        function getServiceIcon(type) {
-            if (type.toLowerCase().includes('postgres')) return 'bi-database';
-            if (type.toLowerCase().includes('rabbit')) return 'bi-envelope';
-            if (type.toLowerCase().includes('gemfire')) return 'bi-lightning';
-            return 'bi-box';
         }
 
         async function loadCachedScores() {
