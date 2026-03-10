@@ -11,10 +11,7 @@ applications:
       JAVA_OPTS: -Djava.security.egd=file:///dev/urandom
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 17.+ } }'
       SPRING_PROFILES_ACTIVE: cloud
-    services:
-      - credit-db      # PostgreSQL service instance
-      - credit-msg     # RabbitMQ service instance
-      - credit-cache   # GemFire/Tanzu Data service instance
+    # Services (credit-db, credit-msg, credit-cache) are bound manually during the demo
     # Random route ensures a unique public URL (e.g., global-credit-engine-brave-lion-xs.cfapps.io)
     random-route: true
     health-check-type: http
