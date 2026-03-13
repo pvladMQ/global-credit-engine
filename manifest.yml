@@ -11,8 +11,12 @@ applications:
       JAVA_OPTS: -Djava.security.egd=file:///dev/urandom
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 17.+ } }'
       SPRING_PROFILES_ACTIVE: cloud
-    # Services (credit-db, credit-msg, credit-cache) are bound manually during the demo
+    # Services (credit-db, credit-msg, credit-cache) bound automatically to the app
     # Note: credit-cache is bound to a Valkey instance
+    services:
+      - credit-db
+      - credit-msg
+      - credit-cache
     # Random route ensures a unique public URL (e.g., global-credit-engine-brave-lion-xs.cfapps.io)
     random-route: true
     health-check-type: http
