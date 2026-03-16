@@ -17,6 +17,7 @@ applications:
       - credit-db
       - credit-msg
       - credit-cache
+      - credit-chat
     # Random route ensures a unique public URL (e.g., global-credit-engine-brave-lion-xs.cfapps.io)
     random-route: true
     health-check-type: http
